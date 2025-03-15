@@ -3,7 +3,7 @@ import sbt.Keys._
 import sbt._
 import xerial.sbt.Sonatype._
 
-ThisBuild / scalaVersion := "2.13.6"
+ThisBuild / scalaVersion := "3.6.4"
 ThisBuild / scalacOptions ++= Seq("-feature", "-unchecked")
 ThisBuild / organization        := "net.team2xh"
 publishTo                       := sonatypePublishTo.value
@@ -34,7 +34,7 @@ lazy val scurses = (project in file("scurses"))
   .settings(
     name                                 := "scurses",
     version                              := "1.0.1",
-    libraryDependencies += "com.lihaoyi" %% "fastparse" % "2.3.2",
+    libraryDependencies += "com.lihaoyi" %% "fastparse" % "3.1.1",
     Compile / run / mainClass            := Some("net.team2xh.scurses.examples.GameOfLife")
   )
 

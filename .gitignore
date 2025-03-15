@@ -19,5 +19,8 @@ src_managed/
 project/boot/
 project/plugins/project/
 
+# BSP
+.bsp/
+
 
 

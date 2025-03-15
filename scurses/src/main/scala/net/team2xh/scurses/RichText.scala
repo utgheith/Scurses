@@ -1,7 +1,7 @@
 package net.team2xh.scurses
 
-import fastparse._
-import NoWhitespace._
+import fastparse.{*, given}
+import NoWhitespace.{*, given}
 
 /** RichText string interpolator.
   *
@@ -36,8 +36,8 @@ object RichText {
 
   implicit class RichTextHelper(val sc: StringContext) extends AnyVal {
     def r(args: Any*): RichText = {
-      val input  = sc.s(args: _*)
-      val result = parse(input, richText(_))
+      val input  = sc.s(args*)
+      val result = parse(input, p => richText(using p))
       result match {
         case Parsed.Success(rt, _) => rt
         case _: Parsed.Failure     => RichText(Text(input))
@@ -68,43 +68,43 @@ object RichText {
   final case class IndexedColor(code: Int)  extends Color
   final case class HexColor(hex: String)    extends Color
 
-  private def letter[_: P]   = P(CharIn("a-z"))
-  private def digit[_: P]    = P(CharIn("0-9"))
-  private def hexDigit[_: P] = P(CharIn("0-9", "a-f", "A-F"))
+  private def letter[$: P]   = P(CharIn("a-z"))
+  private def digit[$: P]    = P(CharIn("0-9"))
+  private def hexDigit[$: P] = P(CharIn("0-9", "a-f", "A-F"))
 
-  private def name[_: P]  = P(letter.rep(1).!)
-  private def index[_: P] = P(digit.rep(1).!) map (_.toInt)
-  private def hex[_: P]   = P(("#" ~/ hexDigit ~/ hexDigit ~/ hexDigit ~/ hexDigit ~/ hexDigit ~/ hexDigit).!)
+  private def name[$: P]  = P(letter.rep(1).!)
+  private def index[$: P] = P(digit.rep(1).!) map (_.toInt)
+  private def hex[$: P]   = P(("#" ~/ hexDigit ~/ hexDigit ~/ hexDigit ~/ hexDigit ~/ hexDigit ~/ hexDigit).!)
 
-  private def bold[_: P]       = P("b") map (_ => Bold)
-  private def underline[_: P]  = P("u") map (_ => Underline)
-  private def blink[_: P]      = P("bl") map (_ => Blink)
-  private def reverse[_: P]    = P("r") map (_ => Reverse)
-  private def foreground[_: P] = P("fg") map (_ => Foreground)
-  private def background[_: P] = P("bg") map (_ => Background)
+  private def bold[$: P]       = P("b").map (_ => Bold)
+  private def underline[$: P]  = P("u").map (_ => Underline)
+  private def blink[$: P]      = P("bl").map (_ => Blink)
+  private def reverse[$: P]    = P("r").map (_ => Reverse)
+  private def foreground[$: P] = P("fg").map (_ => Foreground)
+  private def background[$: P] = P("bg").map (_ => Background)
 
-  private def attribute[_: P] = P(underline | blink | bold | reverse | foreground | background)
+  private def attribute[$: P] = P(underline | blink | bold | reverse | foreground | background)
 
-  private def namedColor[_: P]   = P(name) map NamedColor
-  private def indexedColor[_: P] = P(index) map IndexedColor
-  private def hexColor[_: P]     = P(hex) map HexColor
+  private def namedColor[$: P]   = P(name).map(c => NamedColor(c))
+  private def indexedColor[$: P] = P(index).map(c => IndexedColor(c))
+  private def hexColor[$: P]     = P(hex).map(c => HexColor(c))
 
-  private def color[_: P] = P(namedColor | indexedColor | hexColor)
+  private def color[$: P] = P(namedColor | indexedColor | hexColor)
 
-  private def startAttribute[_: P] = P(attribute) map StartAttribute
-  private def beginColor[_: P] = P(("fg" | "bg").! ~ ":" ~/ color) map {
+  private def startAttribute[$: P] = P(attribute).map(StartAttribute.apply)
+  private def beginColor[$: P] = P(("fg" | "bg").! ~ ":" ~/ color) map {
     case ("fg", aColor) => StartAttribute(Foreground(aColor))
     case (_, aColor)    => StartAttribute(Background(aColor))
   }
-  private def stop[_: P] = P("/" ~/ ("*".! | attribute)) map {
+  private def stop[$: P] = P("/" ~/ ("*".! | attribute)).map {
     case "*"             => ResetAttributes
     case attr: Attribute => StopAttribute(attr)
   }
 
-  private def block[_: P]  = P("[" ~/ (beginColor | startAttribute | stop) ~/ "]")
-  private def escape[_: P] = P("[[".!) map (_ => Text("["))
-  private def text[_: P]   = P(CharsWhile(c => c != '[').!) map Text
+  private def block[$: P]  = P("[" ~/ (beginColor | startAttribute | stop) ~/ "]")
+  private def escape[$: P]: P[Text] = P("[[".!).map (_ => Text("["))
+  private def text[$: P]: P[Text]   = P(CharsWhile(c => c != '[').!).map(Text.apply)
 
-  private def richText[_: P] = P((text | escape | block).rep) map (RichText(_: _*))
+  private def richText[$: P]: P[RichText] = P((text | escape | block).rep).map (x => RichText(x*))
 
 }
